@@ -21,19 +21,17 @@ BLACK = (  0,   0,   0)
 FPS = 30 #Frames per second
 fpsClock = pygame.time.Clock()
 DISPLAYSURF = pygame.display.set_mode((SCREENWIDTH, SCREENHEIGHT), 0, 32) #Main screen that I will add stuff on
-pygame.display.set_caption("Projectile Motion & Particle Rolling Down A Ramp In A 2D Plane") #Caption of the simulation
+pygame.display.set_caption("Projectile Motion") #Caption of the simulation
 
 def MainMenu(): #Makes the main menu
     ProjMotion = False
     Running = True
     Title = Font.render("Main Menu", 1, RED) #'Main menu' title #Change to title later on
-    ProjectileMotionButton = Button("Projectile Motion", 100, 450, 60, 200, DISPLAYSURF) #Instanciating proj_motion button
-    RampButton = Button("Ramp Mode", 600, 450, 60, 200, DISPLAYSURF) #Instanciating ramp mode button
+    ProjectileMotionButton = Button("Projectile Motion", 350, 450, 60, 200, DISPLAYSURF) #Instanciating proj_motion button
     while Running: #Main game loop that runs the animation
         DISPLAYSURF.fill(BLACK) #Initialises the screen by making it white
         DISPLAYSURF.blit(Title, (330,200)) #Displays title on screen
         ProjectileMotionButton.DisplayButton()
-        RampButton.DisplayButton()
         for event in pygame.event.get():
             if event.type == QUIT: #Allows user to exit program
                 pygame.quit() #Stops pygame
@@ -43,14 +41,11 @@ def MainMenu(): #Makes the main menu
                 if ProjectileMotionButton.ClickInRange((PosX,PosY)) == True: #Checks if the click is in range of the button
                     ProjMotion = True
                     Running = False #Stops the animation loop
-        #        elif RampButton.ClickInRange((PosX, PosY)) == True: #Checks if the click is in the range of the button
                     Running = False #Stops the animation loop
         pygame.display.update() #Updates display every frame
         fpsClock.tick(FPS)
     if ProjMotion == True:
         InputScreen_ProjMotion()
-    else:
-        InputScreen_Ramp() #So that you can access the input screen for a particle rolling down a ramp
 
 def InputScreen_ProjMotion(): #Makes the input screen for projectile motion #Make sure you pass parameters
     Title = Font.render("Projectile Motion Input Screen", 1, RED) #Title
@@ -107,12 +102,10 @@ def InputScreen_ProjMotion(): #Makes the input screen for projectile motion #Mak
 def ProjMotionSimulation(s,u,v,t,Angle,Hide,Mode):
     #Making Widgets
     InputButton = Button("Inputs", 600, 400, 35,200,DISPLAYSURF)
-    RampButton = Button("Ramp Mode", 600, 470, 35, 200,DISPLAYSURF)
     ExplainButton = Button("Explain", 600, 540, 35, 200, DISPLAYSURF)
     HIDE = CheckBox(500,400,30,DISPLAYSURF,"Hide Parameters:",160)
     HIDE.Clicked = Hide
     Input = False
-    Ramp = False
     Explain = False
     GROUNDLEVEL = 350
     s = s
@@ -135,18 +128,53 @@ def ProjMotionSimulation(s,u,v,t,Angle,Hide,Mode):
     while Running:
         DISPLAYSURF.fill(WHITE)
         InputButton.DisplayButton()
-      #  RampButton.DisplayButton()
         ExplainButton.DisplayButton()
         HIDE.MakeBox()
         if HIDE.Clicked == False:
-            PrintParameters(s,u,v,t,ANGLEDEGREES)
+            PrintParameters(s, u, v, t, ANGLEDEGREES)
         if Motion == True:
             PosX, PosY = CoordinatesList[Pointer][0], CoordinatesList[Pointer][1]
             DISPLAYSURF.blit(BALL, (PosX, PosY))
-            if Pointer == (len(CoordinatesList)-1):
+            if Pointer == (len(CoordinatesList) - 1):
                 Motion = False
             else:
-                Pointer +=1
+                Pointer += 1
+
+        if Motion == False:
+            PosY = GROUNDLEVEL
+            PosX = CoordinatesList[Pointer][0]
+            DISPLAYSURF.blit(BALL, (PosX, PosY))
+        # Makes trail
+        if Pointer > 1:
+            pygame.draw.aalines(DISPLAYSURF, RED, False, TrailList[:Pointer], 5)  # MakeTrail(Pointer)
+        # Makes ground by drawing a thick, green line
+        pygame.draw.line(DISPLAYSURF, GREEN, (0, GROUNDLEVEL + 25), (SCREENWIDTH, GROUNDLEVEL + 25),
+                         8)  # +25 makes simulation look better
+
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == MOUSEBUTTONDOWN:
+                (PosX, PosY) = pygame.mouse.get_pos()  # Get position of mouse click
+                HIDE.ClickInRange((PosX, PosY))
+                if InputButton.ClickInRange((PosX, PosY)) == True:
+                    Input = True  # It will be true which implies that that user must enter inputs again
+                    Running = False
+                elif ExplainButton.ClickInRange((PosX, PosY)) == True:
+                    Explain = True
+                    Running = False
+
+        pygame.display.update()
+        fpsClock.tick(FPS)
+    if Input == True:
+        InputScreen_ProjMotion()
+    elif Explain == True:
+        if Mode == 1:
+            Explain_ProjMotion1(s, u, v, t, ANGLEDEGREES, HIDE.Clicked, Mode)
+        elif Mode == 2:
+            Explain_ProjMotion2(s, u, v, t, ANGLEDEGREES, HIDE.Clicked, Mode)
+
 
         if Motion == False:
             PosY = GROUNDLEVEL
@@ -168,9 +196,6 @@ def ProjMotionSimulation(s,u,v,t,Angle,Hide,Mode):
                     if InputButton.ClickInRange((PosX,PosY)) == True:
                         Input = True #It will be true which implies that that user must enter inputs again
                         Running = False
-                    elif RampButton.ClickInRange((PosX,PosY)) == True:
-                        Ramp = True
-                        Running = False
                     elif ExplainButton.ClickInRange((PosX,PosY)) == True:
                         Explain = True
                         Running = False
@@ -179,134 +204,11 @@ def ProjMotionSimulation(s,u,v,t,Angle,Hide,Mode):
         fpsClock.tick(FPS)
     if Input == True:
         InputScreen_ProjMotion()
-    elif Ramp == True:
-        InputScreen_Ramp()
     elif Explain == True:
         if Mode == 1:
             Explain_ProjMotion1(s,u,v,t,ANGLEDEGREES,HIDE.Clicked,Mode)
         elif Mode == 2:
             Explain_ProjMotion2(s,u,v,t,ANGLEDEGREES,HIDE.Clicked,Mode)
-
-def InputScreen_Ramp(): #Makes the input screen for projectile motion #Make sure you pass parameters
-    Title = Font.render("Ramp Mode Input Screen", 1, RED) #Title
-    DisplacementBox, InitialVBox, AngleBox, MassBox, HideCheck, SubmitButton, RandomDisplacement,RandomInitialV, RandomAngle, RandomMass = MakeWidgets_Ramp()
-    Running = True
-    while Running:
-        DISPLAYSURF.fill(WHITE)
-        DISPLAYSURF.blit(Title,(120,60)) #Adds title to the top of the screen
-        #Display All buttons, input boxes & checkbox
-        DisplayWidgets(DisplacementBox, InitialVBox, AngleBox, MassBox, HideCheck, SubmitButton, RandomDisplacement, RandomInitialV, RandomAngle, RandomMass)
-
-        for event in pygame.event.get():
-            if event.type == QUIT:
-                pygame.quit()
-                sys.exit()
-            elif event.type == pygame.MOUSEBUTTONDOWN: #Can check multiple things at once as they'll never overlap
-                (PosX,PosY)  = pygame.mouse.get_pos()
-                #Checks if the box has been clicked on or not- Will cancel out the click if it's not the case
-                InitialVBox.ClickInRange((PosX,PosY))
-                DisplacementBox.ClickInRange((PosX,PosY))
-                AngleBox.ClickInRange((PosX,PosY))
-                MassBox.ClickInRange((PosX,PosY))
-                #Allows you to check\uncheck the hide checkbox
-                HideCheck.ClickInRange((PosX,PosY))
-                if SubmitButton.ClickInRange((PosX,PosY)) == True: #Checks if submit button has been clicked
-                    Running = False #Stops the animation loop
-                elif RandomDisplacement.ClickInRange((PosX,PosY)):
-                    DisplacementBox.Variable = RandomDisplacement.GetNumInRange()
-                elif RandomInitialV.ClickInRange((PosX,PosY)):
-                    InitialVBox.Variable = RandomInitialV.GetNumInRange()
-                elif RandomAngle.ClickInRange((PosX,PosY)):
-                    AngleBox.Variable = RandomAngle.GetNumInRange()
-                elif RandomMass.ClickInRange((PosX,PosY)):
-                    MassBox.Variable = RandomMass.GetNumInRange()
-            elif (event.type == KEYDOWN) and (DisplacementBox.Clicked == True):
-                DisplacementBox.AddCharacter(event.key)
-            elif (event.type == KEYDOWN) and (InitialVBox.Clicked == True): #Adds values to the initial velocity
-                InitialVBox.AddCharacter(event.key)
-            elif (event.type == KEYDOWN) and (AngleBox.Clicked == True): #Adds values to the angle
-                AngleBox.AddCharacter(event.key)
-            elif (event.type == KEYDOWN) and (MassBox.Clicked == True): #Adds characters to the mass
-                MassBox.AddCharacter(event.key)
-        #Updates event every 1/30th of a second
-        pygame.display.update()
-        fpsClock.tick(FPS)
-
-    s, u, Angle = Convert(DisplacementBox.Variable,InitialVBox.Variable,AngleBox.Variable) #Tries to convert the inputs to real numbers
-    if (u!="") and (Angle!="") and (s!=""):
-        s, u, v, t, Angle = Solve_Ramp(s,u,9.8,Angle) #Solves remaining parameters using SUVAT equations
-        RampSimulation(s,u,v,t,Angle,HideCheck.Clicked)#Simulation for Proj_Motion
-    else:
-        ErrorMsg_Ramp() #Function which shows the user that not enough inputs were entered
-
-def RampSimulation(s,u,v,t,Angle,Hide):
-    #HIDE = Hide
-    g = 9.8
-    s, u, v,TotalTime,ANGLEDEGREES = s,u,v,t,math.degrees(Angle)
-    InputButton = Button("Inputs", 600, 380, 40,200,DISPLAYSURF) #Button which allows the user to re-enter inputs
-    ProjMotionButton = Button("Projectile Motion", 600, 450, 40, 200,DISPLAYSURF) #Button which allows the user to simulate projectile motion
-    ExplainButton = Button("Explain", 600, 520, 40, 200,DISPLAYSURF) #Button which leads the user to a screen which explains how parameters are worked out
-    HIDE = CheckBox(500,380,30,DISPLAYSURF,"Hide Parameters:",150)
-    HIDE.Clicked = Hide
-    SCALEFACTOR = 4.3 #Adjusts visuals => makes the program prettier #Must be >0
-    RAMPSTART = 500
-    GROUNDLEVEL = 350
-    ANGLERADIANS = math.radians(ANGLEDEGREES) #Have to use this: PyGame works in radians not degrees
-    SimulationTime = 1/FPS #Initialises time
-    y = GROUNDLEVEL - SCALEFACTOR * round(s * math.sin(ANGLERADIANS),1) - 25 #Initialise the the y coordinate
-    #Decides which page to navigate to next
-    Input = False
-    ProjectileMotion = False
-    Explain = False
-    Running = True #Allows the program to run
-
-    while Running:
-        #Display the widgets
-        DISPLAYSURF.fill(WHITE)
-        InputButton.DisplayButton()
-        ProjMotionButton.DisplayButton()
-        ExplainButton.DisplayButton()
-        HIDE.MakeBox()
-        if HIDE.Clicked == False: #Will only show it if the user has chosen not to hide the details
-            PrintParameters_Ramp(s,u,v,t,ANGLEDEGREES)
-
-        #Gets the current x,y  position of the ball on the ramp
-        x, y = GetPos(s,u,g,SimulationTime, ANGLERADIANS,SCALEFACTOR,GROUNDLEVEL,RAMPSTART)
-
-        if (y < GROUNDLEVEL) and (SimulationTime<=TotalTime): #Just in case...
-            DISPLAYSURF.blit(BALL, (x,y))
-            SimulationTime += 1/FPS #So that the time is updated
-        else:
-            DISPLAYSURF.blit(BALL, (RAMPSTART,GROUNDLEVEL-30)) #Just so that it doesn't disappear after being changing
-        #Add these at end so that the ball is underneath the ramp & ground
-        MakeRamp(GROUNDLEVEL,RAMPSTART,ANGLERADIANS,SCALEFACTOR)
-        MakeGround(GROUNDLEVEL)
-
-        for event in pygame.event.get():
-                if event.type == QUIT:
-                    pygame.quit()
-                    sys.exit()
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    (PosX, PosY) = pygame.mouse.get_pos() #Get position of mouse click
-                    HIDE.ClickInRange((PosX,PosY))
-                    if InputButton.ClickInRange((PosX,PosY)) == True:
-                        Input = True #It will be true which implies that that user must enter inputs again
-                        Running = False
-                    elif ProjMotionButton.ClickInRange((PosX,PosY)) == True:
-                        ProjectileMotion = True
-                        Running = False
-                    elif ExplainButton.ClickInRange((PosX,PosY)) == True:
-                        Explain = True
-                        Running = False
-        pygame.display.update()
-        fpsClock.tick(FPS)
-    #Where the next page will be
-    if Input == True:
-        InputScreen_Ramp()
-    elif ProjectileMotion == True:
-        InputScreen_ProjMotion()
-    elif Explain == True:
-        Explain_Ramp(s,u,v,t,ANGLERADIANS,HIDE.Clicked)
 
 
 #Functions Needed
@@ -374,75 +276,8 @@ def DisplayExplainProjMotion(a,b,c,d,e,f,g,h,Button): #Made to display the proce
      DISPLAYSURF.blit(h,(40,370))
      Button.DisplayButton()
 
-def Explain_Ramp(s,u,v,t,Angle,Hide): #Function which takes user to new page which shows how the variables were solved for the ramp
-    ExplainFont = pygame.font.Font(None, 32) #Initialises Pygame's default font this time a size smaller to fit onto screen
-    Running = True
-    VExplain1 = ExplainFont.render("Re-arrange the SUVAT formula (v^2 = u^2 + 2as) into the form:", 1, BLACK)
-    VExplain2 = ExplainFont.render("=> v = √u^2 + 2sgsinθ",1,BLACK)
-    VExplain3 = ExplainFont.render("=> v = √{0}^2 + 2*{1}*g*sin({2})".format("%.1f"%u,"%.1f"%s,"%.1f"%(math.degrees(Angle))),1,BLACK)
-    TExplain1 = ExplainFont.render("Re-arrange (s = ut + 0.5at^2) into quadratic form:",1,BLACK)
-    TExplain2 = ExplainFont.render("=> t = (-u + √u^2 + 19.6s*sinθ) /gsin(θ)",1,BLACK)
-    TExplain3 = ExplainFont.render("=> t = (-{0} + √{0}^2 + 19.6*{1}*sin({2}))/gsin({2})".format(("%.1f"%u),("%.1f"%s),("%.1f"%(math.degrees(Angle)))),1,BLACK)
-    OKButton = Button("OK",400,500,35,100,DISPLAYSURF)
-    while Running:
-        DISPLAYSURF.fill(WHITE)
-        DISPLAYSURF.blit(VExplain1,(40,70))
-        DISPLAYSURF.blit(VExplain2,(40,120))
-        DISPLAYSURF.blit(VExplain3,(40,170))
-        DISPLAYSURF.blit(TExplain1,(40,270))
-        DISPLAYSURF.blit(TExplain2,(40,320))
-        DISPLAYSURF.blit(TExplain3,(40,370))
-        OKButton.DisplayButton()
-        for event in pygame.event.get():
-                if event.type == QUIT:
-                    pygame.quit()
-                    sys.exit()
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    (PosX, PosY) = pygame.mouse.get_pos() #Get position of mouse
-                    if OKButton.ClickInRange((PosX,PosY)) == True:
-                        Running = False
-        pygame.display.update()
-        fpsClock.tick(FPS)
-    RampSimulation(s,u,v,t,Angle,Hide)
-
-
-def MakeRamp(GROUNDLEVEL, RAMPSTART, Angle,SCALEFACTOR):
-    EndRampX = RAMPSTART - (SCALEFACTOR * 100 * math.cos(Angle))
-    EndRampY = GROUNDLEVEL - (SCALEFACTOR * 100 * math.sin(Angle))
-    return pygame.draw.line(DISPLAYSURF, GREEN, (RAMPSTART,GROUNDLEVEL),(EndRampX,EndRampY), 10)
-
 def MakeGround(GROUNDLEVEL):
     return pygame.draw.line(DISPLAYSURF, GREEN, (0,GROUNDLEVEL), (SCREENWIDTH,GROUNDLEVEL),8)
-
-def GetPos(s,u,g,Time,Angle,SCALEFACTOR,GROUNDLEVEL,RAMPSTART):
-    s_difference = (u * Time) + (0.5 * abs(g) * math.sin(Angle) * (Time**2)) #Using formula s=ut+0.5at**2 to get displacement at time t
-    s_new  = s - s_difference
-    x_new = SCALEFACTOR * s_new * math.cos(Angle) #New x coordinate
-    y_new = SCALEFACTOR * s_new * math.sin(Angle) #New y coordinate
-    if (GROUNDLEVEL - y_new) - 25 <= GROUNDLEVEL:
-        x = (RAMPSTART - x_new) - 5#Adjusted or Pygame #The '-5' makes it prettier
-        y = (GROUNDLEVEL - y_new) - 25#Adjusted for Pygame #The '-25' is to make the system look better
-        return x,y
-    else:
-        return RAMPSTART, GROUNDLEVEL- y_new-40
-
-def Solve_Ramp(s,u, g, Angle): #Returns the final velocity and total time of the simulation
-    v = math.sqrt(u**2 + (2*g*math.sin(Angle)*s)) #Rearranging the formula v**2 = u**2 + 2as
-    t = round((-u + math.sqrt(u**2 + (19.6*math.sin(Angle)*s)))/(g * math.sin(Angle)),1) #Rearranging s=ut+0.5at^2
-    return s,u,v, t,Angle
-
-def MakeWidgets_Ramp(): #Makes all neccassary input widgets needed for Ramp input
-    DisplacementBox = InputBox(310, 150, "Displacement (m):", 160, 6, (0.1,100))
-    InitialVBox = InputBox(310, 210, "Initial Velocity (ms^-1):", 205, 5, (0,20))
-    AngleBox = InputBox(310, 270, "Angle Of Inclination (°):", 210, 4,(0.1,89.9))
-    MassBox = InputBox(310,330, "Mass (kg):", 90, 4, (0.1,10))
-    HideCheck = CheckBox(430, 400, 30, DISPLAYSURF, "Hide Variables:",140)#Checkbox which hides variables #(PosX, PosY, Width,Surface,Label):
-    SubmitButton = Button("Submit", 380, 470, 40, 100,DISPLAYSURF)
-    RandomDisplacement = RandomButton("Random", 640, 150, 30, 115, DISPLAYSURF, (0.1,100))
-    RandomInitialV = RandomButton("Random", 640, 210, 30, 115, DISPLAYSURF, (0,20))
-    RandomAngle = RandomButton("Random", 640, 270, 30, 115, DISPLAYSURF, (0.1,89.9))
-    RandomMass = RandomButton("Random", 640, 330, 30, 115, DISPLAYSURF, (0.1,10))
-    return DisplacementBox, InitialVBox, AngleBox, MassBox, HideCheck, SubmitButton, RandomDisplacement, RandomInitialV, RandomAngle, RandomMass
 
 def MakeWidgets(): #Makes all neccassary input widgets needed for the Projectile Motion input screen
     DisplacementBox = InputBox(310, 150, "Displacement (m):", 163, 6, (0.1,100))
@@ -533,21 +368,6 @@ def PrintParameters(s,u,v,t,Angle):
     DISPLAYSURF.blit(T,(40, 520))
     DISPLAYSURF.blit(ANGLE,(40, 550))
 
-def PrintParameters_Ramp(s,u,v,t,Angle):
-    ParameterFont = pygame.font.Font(None, 30) #Initialises Pygame's default font this time a size smaller to fit onto screen
-    S = ParameterFont.render("S = {0} m".format("%.1f"%s),1,BLACK)
-    U = ParameterFont.render("U = {0} ms^-1".format("%.1f"%u),1,BLACK)
-    V = ParameterFont.render("V = {0} ms^-1".format("%.1f"%v),1,BLACK)
-    A = ParameterFont.render("A = gsin({0}) = {1} ms^-2".format("%.1f"%Angle,"%.1f"%(9.8*math.sin(math.radians(Angle)))),1,BLACK) #Ask if client wants '-gsinθ'
-    T = ParameterFont.render("T = {0} s".format("%.1f"%t),1,BLACK)
-    ANGLE = ParameterFont.render("θ = {0}°".format("%.1f"%Angle),1,BLACK)
-    DISPLAYSURF.blit(S,(40, 380))
-    DISPLAYSURF.blit(U,(40, 410))
-    DISPLAYSURF.blit(V,(40, 440))
-    DISPLAYSURF.blit(A,(40, 470))
-    DISPLAYSURF.blit(T,(40, 500))
-    DISPLAYSURF.blit(ANGLE,(40, 530))
-
 def ErrorMsg_NotEnough_Proj():
     Title1 = Font.render("Please Enter The Initial Velocity &", 1, RED)
     Title2 = Font.render("EITHER The Angle Of Projection",1,RED)
@@ -571,34 +391,6 @@ def ErrorMsg_NotEnough_Proj():
         pygame.display.update()
         fpsClock.tick(FPS)
     InputScreen_ProjMotion() #Goes back to the input screen
-
-def ErrorMsg_Ramp(): #Makes error message for Ramp Mode which tells the user to enter Dispacement & Initial Velocity & Angle
-    Line1 = Font.render("ERROR!", 1, RED)
-    Line2 = Font.render("Please Enter ALL Of The Following:",1,RED)
-    Line3 = Font.render("- Displacement",1,RED)
-    Line4 = Font.render("- Initial Velocity", 1, RED)
-    Line5 = Font.render("- Angle Of Inclination",1,RED)
-    OKButton =  Button("OK", 320, 470, 40, 100,DISPLAYSURF)
-    Running = True
-    while Running:
-        DISPLAYSURF.fill(WHITE)
-        DISPLAYSURF.blit(Line1, (270,50))
-        DISPLAYSURF.blit(Line2,(60,120))
-        DISPLAYSURF.blit(Line3,(190,220))
-        DISPLAYSURF.blit(Line4,(190,290))
-        DISPLAYSURF.blit(Line5, (190,360))
-        OKButton.DisplayButton()
-        for event in pygame.event.get():
-            if event.type == QUIT:
-                    pygame.quit()
-                    sys.exit()
-            elif event.type == pygame.MOUSEBUTTONDOWN: #Can check multiple things at once as they'll never overlap
-                (PosX,PosY)  = pygame.mouse.get_pos()
-                if OKButton.ClickInRange((PosX,PosY)) == True:
-                    Running = False #So once the 'OK' button has been clicked, the user is sent back to the input screen
-        pygame.display.update()
-        fpsClock.tick(FPS)
-    InputScreen_Ramp()
 
 def Solve_ProjMotion(s,u,Angle): #Solves remaining parameters using SUVAT equations
     #Actually solve other parameters
